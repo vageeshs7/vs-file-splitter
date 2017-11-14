@@ -29,6 +29,7 @@ public class FileSplitter {
                 {
                     bufferedWriter.flush();
                     bufferedWriter.close();
+                    System.out.println("Created Split-" + splitCount + ".txt with " + currentFileSize + "bytes");
                     splitCount++;
                     currentFileSize = 0;
                     bufferedWriter = new BufferedWriter(new FileWriter("Split-" + splitCount + ".txt"));
@@ -44,13 +45,13 @@ public class FileSplitter {
         }finally{
             try {
                 bufferedReader.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
             try {
                 bufferedWriter.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -62,21 +63,24 @@ public class FileSplitter {
         FileSplitter fs = new FileSplitter();
         long bytesPerSplit = 0;
 
-        if(args[1].endsWith("KB") || args[1].endsWith("kb"))
-        {
-            String lengthStr = args[1].substring(0, args[1].length()-2);
-            bytesPerSplit = Long.parseLong(lengthStr.trim());
-            bytesPerSplit = bytesPerSplit * 1024; //kilo bytes
-        } else if(args[1].endsWith("MB") || args[1].endsWith("mb"))
-        {
-            String lengthStr = args[1].substring(0, args[1].length()-2);
-            bytesPerSplit = Long.parseLong(lengthStr.trim());
-            bytesPerSplit = bytesPerSplit * 1024 * 1024; //kilo bytes
-        }else{
-            bytesPerSplit = Long.parseLong(args[1].trim());
+        try {
+            if(args[1].endsWith("KB") || args[1].endsWith("kb"))
+            {
+                String lengthStr = args[1].substring(0, args[1].length()-2);
+                bytesPerSplit = Long.parseLong(lengthStr.trim());
+                bytesPerSplit = bytesPerSplit * 1024; //kilo bytes
+            } else if(args[1].endsWith("MB") || args[1].endsWith("mb"))
+            {
+                String lengthStr = args[1].substring(0, args[1].length()-2);
+                bytesPerSplit = Long.parseLong(lengthStr.trim());
+                bytesPerSplit = bytesPerSplit * 1024 * 1024; //kilo bytes
+            }else{
+                bytesPerSplit = Long.parseLong(args[1].trim());
+            }
+
+            fs.splitTextFile(args[0], bytesPerSplit);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
         }
-
-
-        fs.splitTextFile(args[0], bytesPerSplit);
     }
 }
