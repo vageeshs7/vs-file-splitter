@@ -17,7 +17,7 @@ public class FileSplitter implements ActionListener, Runnable{
             File file = new File(filename);
             logMessage("Original File size: " + file.length());
             bufferedReader = new BufferedReader(new FileReader(file));
-            String line = null;
+            String line;
             long totalLengthProcessed = 0;
 
             int splitCount = 0;
@@ -52,19 +52,20 @@ public class FileSplitter implements ActionListener, Runnable{
             }
 
             bufferedReader.close();
-        } catch (FileNotFoundException e) {
+        } catch (Exception e) {
+            this.logMessage("Error :" + e.getMessage());
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }finally{
+        } finally{
             try {
-                bufferedReader.close();
+                if(bufferedReader != null)
+                    bufferedReader.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
             try {
-                bufferedWriter.close();
+                if(bufferedWriter != null)
+                    bufferedWriter.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -78,17 +79,7 @@ public class FileSplitter implements ActionListener, Runnable{
         if(args.length > 0 && "-n".equals(args[0])) {
             fs.handleCommandLineRequest(args[1], args[2]);
         }else {
-            try {
-                fs.handleGUIRequest();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (UnsupportedLookAndFeelException e) {
-                e.printStackTrace();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
+            fs.handleGUIRequest();
         }
     }
 
@@ -101,15 +92,19 @@ public class FileSplitter implements ActionListener, Runnable{
         }
     }
 
-    JTextField filenameField = null;
-    JTextField sizeField = null;
-    JProgressBar progressBar = null;
-    JTextArea infoTextArea = null;
+    private JTextField filenameField = null;
+    private JTextField sizeField = null;
+    private JProgressBar progressBar = null;
+    private JTextArea infoTextArea = null;
 
-    private void handleGUIRequest() throws ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
+    private void handleGUIRequest()  {
         System.out.println("Starting File Splitter UI");
 
-        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
         int frameWidth = (int) (dimension.getWidth() * 0.5);
