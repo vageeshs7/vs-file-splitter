@@ -7,21 +7,36 @@ import java.awt.event.ActionListener;
 import java.io.*;
 
 public class FileSplitter implements ActionListener, Runnable{
-    private void splitTextFile(String filename, long bytesPerSplit)
+    private boolean splitTextFile(String filename, long bytesPerSplit)
     {
         logMessage("Splitting " + filename + " into splits of " + bytesPerSplit + " bytes per file");
         BufferedReader bufferedReader = null;
         BufferedWriter bufferedWriter = null;
+        boolean status;
 
         try {
             File file = new File(filename);
             logMessage("Original File size: " + file.length());
+
+            int extIndex = filename.lastIndexOf(".");
+            String splitFilename;
+            String splitFileExt;
+            if(extIndex < 0)
+            {
+                splitFilename = filename;
+                splitFileExt = "";
+            }else{
+                splitFilename = filename.substring(0, extIndex);
+                splitFileExt = filename.substring(extIndex, filename.length());
+            }
+
             bufferedReader = new BufferedReader(new FileReader(file));
             String line;
             long totalLengthProcessed = 0;
 
             int splitCount = 0;
-            bufferedWriter = new BufferedWriter(new FileWriter("Split-" + splitCount + ".txt"));
+            String splitFilenameFinalName = splitFilename + "-" + splitCount + splitFileExt;
+            bufferedWriter = new BufferedWriter(new FileWriter(splitFilenameFinalName));
             long currentFileSize = 0;
             String lineSeperator = System.getProperty("line.separator");
             while((line = bufferedReader.readLine()) != null)
@@ -33,9 +48,9 @@ public class FileSplitter implements ActionListener, Runnable{
                 {
                     bufferedWriter.flush();
                     bufferedWriter.close();
-                    logMessage("Created Split-" + splitCount + ".txt with " + currentFileSize + "bytes");
+                    logMessage("Created " + splitFilenameFinalName + " with " + currentFileSize + "bytes");
                     splitCount++;
-                    //Progress
+                    splitFilenameFinalName = splitFilename + "-" + splitCount + splitFileExt;
 
                     totalLengthProcessed += currentFileSize;
                     float percent =  ((float)totalLengthProcessed / (float)file.length()) * 100;
@@ -46,15 +61,17 @@ public class FileSplitter implements ActionListener, Runnable{
 
                     //Reset
                     currentFileSize = 0;
-                    bufferedWriter = new BufferedWriter(new FileWriter("Split-" + splitCount + ".txt"));
+                    bufferedWriter = new BufferedWriter(new FileWriter(splitFilenameFinalName));
                 }
 
             }
 
             bufferedReader.close();
+            status = true;
         } catch (Exception e) {
             this.logMessage("Error :" + e.getMessage());
             e.printStackTrace();
+            status = false;
         } finally{
             try {
                 if(bufferedReader != null)
@@ -70,7 +87,7 @@ public class FileSplitter implements ActionListener, Runnable{
                 e.printStackTrace();
             }
         }
-
+        return status;
     }
 
     public static void main(String[] args)
@@ -199,8 +216,11 @@ public class FileSplitter implements ActionListener, Runnable{
         String size = sizeField.getText();
         try {
             long bytesPerSplit = calculateSizeInBytes(size);
-            this.splitTextFile(filename, bytesPerSplit);
-            this.progressBar.setValue(100);
+            boolean status = this.splitTextFile(filename, bytesPerSplit);
+            if(status)
+                this.progressBar.setValue(100);
+            else
+                this.progressBar.setValue(-1);
         } catch (NumberFormatException e) {
             e.printStackTrace();
         }
