@@ -15,7 +15,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes("Implementation-Title": "File Splitter",
+        attributes("Implementation-Title": "VS File Splitter",
                 "Implementation-Version": version,
                 "Main-Class": "com.vags.file.splitter.FileSplitter")
     }
