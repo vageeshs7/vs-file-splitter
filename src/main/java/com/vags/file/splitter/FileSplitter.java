@@ -1,21 +1,21 @@
 package com.vags.file.splitter;
 
 import javax.swing.*;
-import javax.swing.plaf.synth.SynthEditorPaneUI;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 
-public class FileSplitter implements ActionListener{
+public class FileSplitter implements ActionListener, Runnable{
     private void splitTextFile(String filename, long bytesPerSplit)
     {
-        System.out.println("Splitting " + filename + " into splits of " + bytesPerSplit + " bytes per file");
+        logMessage("Splitting " + filename + " into splits of " + bytesPerSplit + " bytes per file");
         BufferedReader bufferedReader = null;
         BufferedWriter bufferedWriter = null;
 
         try {
             File file = new File(filename);
-            System.out.println("Original File size: " + file.length());
+            logMessage("Original File size: " + file.length());
             bufferedReader = new BufferedReader(new FileReader(file));
             String line = null;
             long totalLengthProcessed = 0;
@@ -33,14 +33,10 @@ public class FileSplitter implements ActionListener{
                 {
                     bufferedWriter.flush();
                     bufferedWriter.close();
-                    System.out.println("Created Split-" + splitCount + ".txt with " + currentFileSize + "bytes");
+                    logMessage("Created Split-" + splitCount + ".txt with " + currentFileSize + "bytes");
                     splitCount++;
                     //Progress
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+
                     totalLengthProcessed += currentFileSize;
                     float percent =  ((float)totalLengthProcessed / (float)file.length()) * 100;
                     if(progressBar != null)
@@ -82,7 +78,17 @@ public class FileSplitter implements ActionListener{
         if(args.length > 0 && "-n".equals(args[0])) {
             fs.handleCommandLineRequest(args[1], args[2]);
         }else {
-            fs.handleGUIRequest();
+            try {
+                fs.handleGUIRequest();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (UnsupportedLookAndFeelException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -98,10 +104,16 @@ public class FileSplitter implements ActionListener{
     JTextField filenameField = null;
     JTextField sizeField = null;
     JProgressBar progressBar = null;
+    JTextArea infoTextArea = null;
 
-    private void handleGUIRequest()
-    {
+    private void handleGUIRequest() throws ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
         System.out.println("Starting File Splitter UI");
+
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+        int frameWidth = (int) (dimension.getWidth() * 0.5);
+        int frameHeight = (int) (dimension.getHeight() * 0.7);
         JFrame frame = new JFrame("VS File Splitter");
 
         JLabel filenameLabel = new JLabel("File : ");
@@ -121,8 +133,20 @@ public class FileSplitter implements ActionListener{
         splitButton.addActionListener(this);
 
         progressBar = new JProgressBar(0,100);
-        progressBar.setBounds(20, 110, 200, 30);
+        progressBar.setBounds(20, 110, frameWidth - 50, 30);
         progressBar.setValue(0);
+        progressBar.setStringPainted(true);
+        progressBar.setIndeterminate(false);
+
+        infoTextArea = new JTextArea("");
+
+        infoTextArea.setColumns(50);
+        infoTextArea.setRows(5);
+        JScrollPane textScroller = new JScrollPane(infoTextArea);
+        textScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        textScroller.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        textScroller.setBounds(20, 160, frameWidth - 50, 300);
+
 
         frame.add(filenameLabel);
         frame.add(filenameField);
@@ -130,8 +154,12 @@ public class FileSplitter implements ActionListener{
         frame.add(sizeField);
         frame.add(splitButton);
         frame.add(progressBar);
+        frame.add(textScroller);
 
-        frame.setSize(300, 300);
+
+        frame.setSize(frameWidth, frameHeight);
+        frame.setLocation((int) (dimension.getWidth() * 0.5 - frameWidth * 0.5),
+                (int) (dimension.getHeight() * 0.5 - frameHeight * 0.5));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(null);
         frame.setVisible(true);
@@ -139,15 +167,8 @@ public class FileSplitter implements ActionListener{
 
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
-        String filename = filenameField.getText();
-        String size = sizeField.getText();
-        try {
-            long bytesPerSplit = calculateSizeInBytes(size);
-            this.splitTextFile(filename, bytesPerSplit);
-            this.progressBar.setValue(100);
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-        }
+        Thread t = new Thread(this);
+        t.start();
     }
 
     private long calculateSizeInBytes(String size) {
@@ -167,5 +188,26 @@ public class FileSplitter implements ActionListener{
         }
 
         return bytesPerSplit;
+    }
+
+    private void logMessage(String message)
+    {
+        System.out.println(message);
+        if(infoTextArea != null) {
+            this.infoTextArea.append("\n" + message);
+        }
+    }
+
+    @Override
+    public void run() {
+        String filename = filenameField.getText();
+        String size = sizeField.getText();
+        try {
+            long bytesPerSplit = calculateSizeInBytes(size);
+            this.splitTextFile(filename, bytesPerSplit);
+            this.progressBar.setValue(100);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
     }
 }
